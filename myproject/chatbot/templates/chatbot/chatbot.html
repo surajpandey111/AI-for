@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'chatbot/styles.css' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <style>
+        #response {
+            height: 460px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .user-message, .bot-message {
+            padding: 5px;
+            margin: 5px 0;
+        }
+        .user-message {
+            text-align: middle;
+            color: red;
+        }
+        .bot-message {
+            text-align: left;
+            color: green;
+        }
+    </style>
+    <script>
+        function sendQuery(query) {
+            fetch('/chatbot/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const responseDiv = document.getElementById('response');
+                if (data.error) {
+                    responseDiv.innerHTML += `<div class="bot-message">Error: ${data.error}</div>`;
+                } else {
+                    responseDiv.innerHTML += `<div class="user-message">${query}</div>`;
+                    responseDiv.innerHTML += `<div class="bot-message">${data.response}</div>`;
+                    responseDiv.scrollTop = responseDiv.scrollHeight;
+                    speak(data.response);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function startVoiceRecognition() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition)();
+            recognition.lang = 'en-IN';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                const query = event.results[0][0].transcript;
+                document.getElementById('query').value = query;
+                sendQuery(query);
+            };
+            recognition.onspeechend = () => {
+                recognition.stop();
+            };
+            recognition.onerror = (event) => {
+                console.error('speech recognition error', event.error);
+            };
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        function wishMe() {
+            const hour = new Date().getHours();
+            let greeting = "Good Night";
+            if (hour >= 0 && hour < 12) {
+                greeting = "Good Morning";
+            } else if (hour >= 12 && hour < 18) {
+                greeting = "Good Afternoon";
+            } else {
+                greeting = "Good Evening";
+            }
+            const message = `${greeting}, I am ALEXANDER, your personal assistant made by Suraj Kumar Pandey. How may I assist you today?`;
+            speak(message);
+        }
+        window.onload = wishMe;
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const speech = new SpeechSynthesisUtterance(text);
+                speech.lang = 'en-IN';
+                window.speechSynthesis.speak(speech);
+            } else {
+                console.error('Text-to-Speech not supported in this browser.');
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Chatbot - ALEXANDER FOR EVERYTHING</h1>
+    <input type="text" id="query" placeholder="Type your query here">
+    <button onclick="sendQuery(document.getElementById('query').value)">Send</button>
+    <button onclick="startVoiceRecognition()">Speak</button>
+    <div id="response"></div>
+</body>
+</html>
