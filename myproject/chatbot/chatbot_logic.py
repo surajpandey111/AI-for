@@ -180,9 +180,10 @@ def perform_image_detection(selected_number):
     if os.path.exists(image_path):
         img = PIL.Image.open(image_path)
         try:
-            model = genai.GenerativeModel("gemini-pro-vision")
-            # model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(img)
+            #model = genai.GenerativeModel("gemini-pro-vision")
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            prompt = "ANALYSIS THIS: Analyze the objects and describe the context in the image. and where its use in medicime and how"
+            response = model.generate_content([prompt,img])
             print(response.text)
             return response.text
             #speak(response.text)
